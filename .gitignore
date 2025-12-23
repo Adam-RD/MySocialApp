@@ -484,5 +484,7 @@ $RECYCLE.BIN/
 *.swp
 API/appsettings.json
 API/mysocialapp.db
+API/mysocialapp.db-wal
+API/mysocialapp.db-shm
 API/WeatherForecast.cs
 API/Controllers/WeatherForecastController.cs
