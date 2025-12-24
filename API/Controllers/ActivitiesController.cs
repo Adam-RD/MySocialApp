@@ -1,24 +1,24 @@
+using Application.Activities.Commands;
+using Application.Activities.Queries;
 using Domain;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Persistence;
 
 namespace API.Controllers;
 
-public class ActivitiesController(AppDbContext context) : BaseApiController
+public class ActivitiesController : BaseApiController
 {
-   // private readonly AppDbContext _context = context;
 
     [HttpGet]
     public async Task<ActionResult<List<Activity>>> GetActivities()
     {
-        return await context.Activities.ToListAsync();
+        return await Mediator.Send(new GetActivityList.Query());
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Activity>> GetActivityDetail(string id)
     {
-        var activity = await context.Activities.FindAsync(id);
+        var activity = await Mediator.Send(new GetActivityDetail.Query(id));
         if (activity is null) return NotFound();
 
         return activity;
@@ -27,22 +27,30 @@ public class ActivitiesController(AppDbContext context) : BaseApiController
     [HttpPost]
     public async Task<ActionResult<Activity>> CreateActivity(Activity activity)
     {
-        context.Activities.Add(activity);
-        await context.SaveChangesAsync();
+        var created = await Mediator.Send(new CreateActivity.Command(activity));
 
-        return CreatedAtAction(nameof(GetActivityDetail), new { id = activity.Id }, activity);
+        return CreatedAtAction(nameof(GetActivityDetail), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateActivity(string id, Activity updated)
+    public async Task<IActionResult> EditActivity(string id, Activity updated)
     {
         if (id != updated.Id) return BadRequest("El id de la ruta no coincide con el cuerpo.");
 
-        var exists = await context.Activities.AnyAsync(a => a.Id == id);
-        if (!exists) return NotFound();
+        var updatedResult = await Mediator.Send(new EditActivity.Command(updated));
+        if (!updatedResult) return NotFound();
 
-        context.Entry(updated).State = EntityState.Modified;
-        await context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> EditActivity(Activity updated)
+    {
+        if (string.IsNullOrWhiteSpace(updated.Id))
+            return BadRequest("El id es obligatorio en el cuerpo.");
+
+        var updatedResult = await Mediator.Send(new EditActivity.Command(updated));
+        if (!updatedResult) return NotFound();
 
         return NoContent();
     }
@@ -50,11 +58,8 @@ public class ActivitiesController(AppDbContext context) : BaseApiController
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteActivity(string id)
     {
-        var activity = await context.Activities.FindAsync(id);
-        if (activity is null) return NotFound();
-
-        context.Activities.Remove(activity);
-        await context.SaveChangesAsync();
+        var deleted = await Mediator.Send(new DeleteActivity.Command(id));
+        if (!deleted) return NotFound();
 
         return NoContent();
     }

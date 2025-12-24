@@ -1,3 +1,4 @@
+using Application.Activities.Queries;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Persistence;
@@ -13,6 +14,8 @@ builder.Services.AddDbContext<AppDbContext>(
         opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
     }
 );
+
+builder.Services.AddMediatR(X => X.RegisterServicesFromAssemblyContaining<GetActivityList.Handler>());
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
